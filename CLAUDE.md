@@ -43,7 +43,7 @@ TrustedTenancy is a comprehensive AI-powered SaaS platform designed for the Aust
    - Multiple ESLint disable comments for type safety bypasses
 
 ### 🚧 In Progress / Next Priority
-- [ ] **Fix database seeding to prevent duplicate data on startup**
+- [x] **✅ FIXED: Database seeding duplication resolved**
 - [ ] **URGENT: Fix NextAuth.js type safety and imports**
 - [ ] **URGENT: Resolve Prisma type compatibility**
 - [ ] Image upload functionality (Vercel Blob integration)
@@ -404,6 +404,7 @@ Copyright (c) 2025 Greg Dickason
 - ✅ Improved error messages and recovery instructions
 - ✅ Added fallback behavior when database temporarily unavailable
 - ✅ Enhanced debugging with connection tracking and logging
+- ✅ **FIXED: Database seeding duplication issue resolved**
 
 ### ⚠️ Technical Compromises Made (Previous Session)
 1. **Type Safety**: Multiple `any` types added to resolve NextAuth compatibility
@@ -411,12 +412,19 @@ Copyright (c) 2025 Greg Dickason
 3. **Dynamic Rendering**: Database pages forced to dynamic to prevent build errors
 4. **ESLint Bypasses**: Multiple disable comments added for type violations
 
+### ✅ Latest Fixes Completed (Current Session)
+6. **Database Seeding Duplication RESOLVED**:
+   - Properties and inquiries were being created on every startup
+   - Converted from `create()` to idempotent `findFirst()` + conditional create
+   - Integrated with enhanced database client for retry logic
+   - Added detailed logging showing created vs existing data
+   - ✅ Result: No more duplicate data, safe to run multiple times
+
 ### 🚨 Immediate Action Items for Next Session
-1. **Fix database seeding duplication**: Prevent adding duplicate properties on every startup
-2. **Research NextAuth.js v5 Migration**: Current issues likely due to version conflicts
-3. **Investigate Prisma Compatibility**: Update to latest stable versions
-4. **Review Next.js 15 Changes**: Ensure all patterns align with latest best practices
-5. **Type Safety Audit**: Remove all `any` types and implement proper typing
+1. **Research NextAuth.js v5 Migration**: Current issues likely due to version conflicts
+2. **Investigate Prisma Compatibility**: Update to latest stable versions
+3. **Review Next.js 15 Changes**: Ensure all patterns align with latest best practices
+4. **Type Safety Audit**: Remove all `any` types and implement proper typing
 
 ---
 
