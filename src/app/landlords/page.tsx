@@ -53,7 +53,11 @@ export default function LandlordPage() {
         window.location.href = `/properties/${property.id}`
       } else {
         const error = await response.json()
-        alert(`Error: ${error.error}`)
+        if (response.status === 401) {
+          alert('Please sign in to create a property listing.')
+        } else {
+          alert(`Error: ${error.error || 'Failed to create property listing. Please ensure the database is connected.'}`)
+        }
       }
     } catch (error) {
       console.error('Error submitting form:', error)
@@ -94,7 +98,7 @@ export default function LandlordPage() {
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({...formData, title: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 placeholder="e.g., Modern 2BR apartment in Sydney CBD"
                 required
               />
@@ -107,7 +111,7 @@ export default function LandlordPage() {
               <textarea
                 value={formData.description}
                 onChange={(e) => setFormData({...formData, description: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 rows={4}
                 placeholder="Describe your property..."
               />
@@ -122,7 +126,7 @@ export default function LandlordPage() {
                   type="text"
                   value={formData.address}
                   onChange={(e) => setFormData({...formData, address: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="Street address"
                   required
                 />
@@ -135,7 +139,7 @@ export default function LandlordPage() {
                   type="text"
                   value={formData.suburb}
                   onChange={(e) => setFormData({...formData, suburb: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="Suburb"
                   required
                 />
@@ -150,7 +154,7 @@ export default function LandlordPage() {
                 <select
                   value={formData.state}
                   onChange={(e) => setFormData({...formData, state: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 >
                   {australianStates.map(state => (
                     <option key={state} value={state}>{state}</option>
@@ -165,7 +169,7 @@ export default function LandlordPage() {
                   type="text"
                   value={formData.postcode}
                   onChange={(e) => setFormData({...formData, postcode: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="2000"
                   required
                 />
@@ -182,7 +186,7 @@ export default function LandlordPage() {
                   min="0"
                   value={formData.bedrooms}
                   onChange={(e) => setFormData({...formData, bedrooms: parseInt(e.target.value)})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   required
                 />
               </div>
@@ -195,7 +199,7 @@ export default function LandlordPage() {
                   min="0"
                   value={formData.bathrooms}
                   onChange={(e) => setFormData({...formData, bathrooms: parseInt(e.target.value)})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   required
                 />
               </div>
@@ -208,7 +212,7 @@ export default function LandlordPage() {
                   min="0"
                   value={formData.parking}
                   onChange={(e) => setFormData({...formData, parking: parseInt(e.target.value)})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 />
               </div>
             </div>
@@ -221,7 +225,7 @@ export default function LandlordPage() {
                 <select
                   value={formData.propertyType}
                   onChange={(e) => setFormData({...formData, propertyType: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                 >
                   {propertyTypes.map(type => (
                     <option key={type} value={type}>
@@ -240,7 +244,7 @@ export default function LandlordPage() {
                   step="50"
                   value={formData.rentAmount}
                   onChange={(e) => setFormData({...formData, rentAmount: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
                   placeholder="2000"
                   required
                 />

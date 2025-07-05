@@ -6,23 +6,32 @@ import Header from '@/components/Header'
 export const dynamic = 'force-dynamic'
 
 export default async function Properties() {
-  const properties = await db.property.findMany({
-    where: {
-      status: 'ACTIVE'
-    },
-    include: {
-      images: true,
-      landlord: {
-        select: {
-          name: true,
-          email: true
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let properties: any[] = []
+  let dbError: string | null = null
+
+  try {
+    properties = await db.property.findMany({
+      where: {
+        status: 'ACTIVE'
+      },
+      include: {
+        images: true,
+        landlord: {
+          select: {
+            name: true,
+            email: true
+          }
         }
+      },
+      orderBy: {
+        createdAt: 'desc'
       }
-    },
-    orderBy: {
-      createdAt: 'desc'
-    }
-  })
+    })
+  } catch (error) {
+    console.error('Database connection error:', error)
+    dbError = 'Unable to connect to database. Please ensure the database is running and configured properly.'
+  }
 
   return (
     <>
@@ -38,7 +47,27 @@ export default async function Properties() {
           </p>
         </div>
 
-        {properties.length === 0 ? (
+        {dbError ? (
+          <div className="text-center py-16">
+            <h2 className="text-2xl font-semibold text-red-600 mb-4">
+              Database Connection Error
+            </h2>
+            <p className="text-gray-600 mb-8">
+              {dbError}
+            </p>
+            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 max-w-2xl mx-auto">
+              <h3 className="font-medium text-yellow-800 mb-2">
+                For Development Setup:
+              </h3>
+              <ol className="text-sm text-yellow-700 list-decimal list-inside space-y-1">
+                <li>Copy .env.example to .env and configure DATABASE_URL</li>
+                <li>Run: npx prisma generate</li>
+                <li>Run: npx prisma migrate dev</li>
+                <li>Or use: npx prisma dev (for local development database)</li>
+              </ol>
+            </div>
+          </div>
+        ) : properties.length === 0 ? (
           <div className="text-center py-16">
             <h2 className="text-2xl font-semibold text-gray-900 mb-4">
               No properties available yet
