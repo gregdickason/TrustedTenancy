@@ -1,6 +1,14 @@
 {
   "name": "trustedtenancy",
   "version": "0.1.0",
+  "description": "AI-powered property management platform for Australian rental properties",
+  "author": "Greg Dickason",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gregdickason/TrustedTenancy.git"
+  },
+  "homepage": "https://github.com/gregdickason/TrustedTenancy#readme",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",

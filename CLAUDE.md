@@ -331,9 +331,16 @@ SENDGRID_API_KEY="email-notifications"
 - [ ] Database query optimization
 - [ ] Security best practices
 
+## License & Legal
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2025 Greg Dickason
+
 ## Contact & Resources
 
-- **Project Repository**: /Users/gregdickason/code/TrustedTenancy/trustedtenancy
+- **Project Repository**: https://github.com/gregdickason/TrustedTenancy
+- **Local Development**: /Users/gregdickason/code/TrustedTenancy/trustedtenancy
 - **Development Server**: http://localhost:3000
 - **Prisma Studio**: http://localhost:5555 (when running)
 - **Documentation**: This CLAUDE.md file

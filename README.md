@@ -145,8 +145,25 @@ npx prisma db push
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2025 Greg Dickason
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## Support
 
 For support, email support@trustedtenancy.com.au or create an issue on GitHub.
+
+## Acknowledgments
+
+- Built with [Next.js](https://nextjs.org/) and [TypeScript](https://www.typescriptlang.org/)
+- Authentication powered by [NextAuth.js](https://next-auth.js.org/)
+- Database management with [Prisma](https://www.prisma.io/)
+- Styled with [Tailwind CSS](https://tailwindcss.com/)
