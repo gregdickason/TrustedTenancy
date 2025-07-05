@@ -23,7 +23,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
         },
       },
     },
-  })
+  }) as any // TODO: Fix this with proper Prisma types
 
   if (!property) {
     notFound()
@@ -127,7 +127,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
                     Features
                   </h2>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {property.features.map((feature) => (
+                    {property.features.map((feature: string) => (
                       <div
                         key={feature}
                         className="flex items-center gap-2 text-gray-600"

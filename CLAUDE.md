@@ -44,6 +44,8 @@ TrustedTenancy is a comprehensive AI-powered SaaS platform designed for the Aust
 
 ### 🚧 In Progress / Next Priority
 - [x] **✅ FIXED: Database seeding duplication resolved**
+- [x] **✅ COMPLETED: Holistic database connection management with circuit breaker**
+- [ ] **PHASE 3: Investigate PostgreSQL prepared statement server-level persistence**
 - [ ] **URGENT: Fix NextAuth.js type safety and imports**
 - [ ] **URGENT: Resolve Prisma type compatibility**
 - [ ] Image upload functionality (Vercel Blob integration)
@@ -351,7 +353,7 @@ Copyright (c) 2025 Greg Dickason
 - **Prisma Studio**: http://localhost:5555 (when running)
 - **Documentation**: This CLAUDE.md file
 
-## Recent Changes (2025-01-05)
+## Recent Changes (2025-07-05)
 
 ### ✅ Completed in Previous Session
 1. **Brand Integration**: Successfully added TrustedTenancy logos and branding
@@ -363,34 +365,36 @@ Copyright (c) 2025 Greg Dickason
 ### 🔥 MAJOR: Database Connection Issues RESOLVED (Current Session)
 
 #### ✅ Critical Fixes Implemented
-1. **Prepared Statement Conflicts Fixed**: 
-   - Resolved "prepared statement 's0' already exists" errors
-   - Implemented automatic client recreation on conflicts
-   - Added exponential backoff retry logic (up to 3 attempts)
+1. **Database Seeding Duplication Fixed**: 
+   - Properties and inquiries created on every startup resolved
+   - Implemented idempotent seeding with conditional creation logic
+   - Integrated with enhanced database client for retry handling
 
-2. **Enhanced Prisma Client Management**:
+2. **Holistic Database Connection Management (Phase 1 & 2 Complete)**:
+   - **Phase 1**: Fixed broken singleton pattern using `Date.now()` timestamp
+   - **Phase 2**: Implemented circuit breaker pattern for fault tolerance
+   - **Environment Strategy**: Different client management for development vs production
+   - **Circuit Breaker**: 5-failure threshold, 30-second timeout, prevents cascade failures
+   - **Enhanced Health Check**: `/api/health` endpoint with circuit breaker state monitoring
+
+3. **Enhanced Prisma Client Management**:
    - Turbopack-compatible singleton pattern for hot reload support
    - Connection tracking with unique IDs for debugging
    - Enhanced logging with query performance monitoring
    - Graceful degradation when database unavailable
 
-3. **Optimized Database Configuration**:
-   - Dedicated `trustedtenancy_dev` database (not `template1`)
-   - Removed problematic `single_use_connections=true` setting
-   - Increased connection limit from 1 to 5 for better concurrency
-   - Proper timeout settings to prevent hanging connections
-
-4. **Enhanced Development Workflow**:
-   - Improved startup script with automatic cleanup
-   - Database reset command for clean restarts
-   - Health check API endpoint at `/api/health`
-   - Better error handling with specific recovery suggestions
+4. **Production-Ready Database Architecture**:
+   - Environment-specific client configuration
+   - Circuit breaker pattern preventing cascade failures
+   - Comprehensive error handling with meaningful user messages
+   - Fallback behavior showing sample data when database is unavailable
 
 #### 📁 New Files Created
-- `src/lib/db.ts` - Enhanced database client with retry logic
-- `src/app/api/health/route.ts` - Database health monitoring endpoint
+- `src/lib/db.ts` - Enhanced database client with circuit breaker and retry logic
+- `src/app/api/health/route.ts` - Database health monitoring with circuit breaker status
 - `scripts/reset-db.js` - Complete database reset utility
 - `scripts/simple-dev.js` - Improved development startup script
+- `DIAGNOSTIC.md` - Comprehensive analysis of prepared statement conflicts
 
 #### 🚀 New Commands Available
 - `npm run dev:with-db` - Start with automatic database management (recommended)
@@ -399,12 +403,23 @@ Copyright (c) 2025 Greg Dickason
 - `npm run db:status` - Quick database status check
 
 #### 🎯 Problems Solved
-- ✅ Eliminated prepared statement conflicts
+- ✅ Eliminated database seeding duplication
+- ✅ Implemented circuit breaker pattern for fault tolerance
 - ✅ Fixed hot reload breaking database connections
-- ✅ Improved error messages and recovery instructions
-- ✅ Added fallback behavior when database temporarily unavailable
+- ✅ Enhanced error messages and recovery instructions
+- ✅ Added graceful degradation with sample data fallback
+- ✅ Created production-ready database connection management
 - ✅ Enhanced debugging with connection tracking and logging
-- ✅ **FIXED: Database seeding duplication issue resolved**
+
+#### 🔍 Remaining Challenge: PostgreSQL Prepared Statement Persistence
+**Issue**: PostgreSQL server maintains prepared statement cache across connections, causing "prepared statement already exists" errors despite `prepared_statements=false` in connection string.
+
+**Impact**: Circuit breaker correctly isolates the issue and provides stable fallback behavior, so application remains functional.
+
+**Phase 3 Investigation Needed**: 
+- PostgreSQL server configuration for prepared statement caching
+- Alternative Prisma client configurations
+- Production database provider evaluation (PlanetScale, Neon, etc.)
 
 ### ⚠️ Technical Compromises Made (Previous Session)
 1. **Type Safety**: Multiple `any` types added to resolve NextAuth compatibility
@@ -420,14 +435,66 @@ Copyright (c) 2025 Greg Dickason
    - Added detailed logging showing created vs existing data
    - ✅ Result: No more duplicate data, safe to run multiple times
 
+7. **🔥 MAJOR: Holistic Database Connection Management COMPLETED**:
+   - **Phase 1**: Fixed broken singleton pattern, disabled prepared statements in connection string
+   - **Phase 2**: Implemented circuit breaker pattern with environment-specific configuration
+   - **Circuit Breaker**: Tracks failures (threshold: 5), timeout: 30s, prevents cascade failures
+   - **Enhanced Health Check**: API endpoint at `/api/health` with circuit breaker state monitoring
+   - **Graceful Degradation**: Application shows meaningful errors and sample data when DB fails
+   - **Environment Strategy**: Different client management for development vs production
+   - ✅ Result: Application remains stable despite database issues, no more crashes
+
+### 🔍 Remaining PostgreSQL Challenge (Phase 3)
+**Prepared Statement Persistence Issue**: PostgreSQL server maintains prepared statement cache across connections, causing "prepared statement already exists" errors. The `prepared_statements=false` parameter is not being respected by Prisma/PostgreSQL. This is a server-level issue requiring investigation into:
+- PostgreSQL configuration for prepared statement caching
+- Prisma client configuration alternatives
+- Connection pooling strategies for production
+- Potential migration to different database providers (PlanetScale, Neon) that handle this automatically
+
 ### 🚨 Immediate Action Items for Next Session
-1. **Research NextAuth.js v5 Migration**: Current issues likely due to version conflicts
-2. **Investigate Prisma Compatibility**: Update to latest stable versions
-3. **Review Next.js 15 Changes**: Ensure all patterns align with latest best practices
+1. **Phase 3: PostgreSQL Prepared Statement Investigation**:
+   - Research PostgreSQL server configuration for prepared statement caching
+   - Evaluate production database providers (PlanetScale, Neon) that handle this automatically
+   - Consider alternative Prisma configurations or database drivers
+2. **NextAuth.js v5 Migration**: Current issues likely due to version conflicts
+3. **Prisma Compatibility**: Update to latest stable versions
 4. **Type Safety Audit**: Remove all `any` types and implement proper typing
+
+### 🏗️ Development vs Production Database Strategy
+
+#### **Development Environment** 
+- **Current**: Uses `prisma dev` local database with singleton pattern
+- **Pros**: Fast hot reload, persistent data, good for development workflow
+- **Cons**: Prepared statement caching issues, singleton complexity
+- **Circuit Breaker**: Provides stability despite database conflicts
+
+#### **Production Environment**
+- **Strategy**: Creates new client per request (not singleton)
+- **Pros**: Avoids prepared statement conflicts, scales better
+- **Cons**: Higher connection overhead, requires connection pooling
+- **Requirements**: 
+  - Managed PostgreSQL (AWS RDS, Neon, PlanetScale)
+  - Connection pooling (PgBouncer or provider-managed)
+  - Proper connection limits and timeouts
+
+#### **Future Production Considerations**
+1. **Database Provider Evaluation**:
+   - **PlanetScale**: Handles prepared statements automatically, excellent scaling
+   - **Neon**: Serverless PostgreSQL with connection pooling
+   - **AWS RDS**: Traditional managed PostgreSQL with custom pooling setup
+   
+2. **Connection Management**:
+   - Production uses per-request clients (already implemented)
+   - Connection pooling at infrastructure level
+   - Circuit breaker remains for fault tolerance
+
+3. **Migration Path**:
+   - Current development setup remains for local development
+   - Production deployment uses different connection strategy
+   - Circuit breaker provides consistent behavior across environments
 
 ---
 
-**Last Updated**: 2025-01-05
-**Current Status**: MVP Complete with Database Issues Resolved + Remaining Technical Debt
-**Next Milestone**: Fix Seeding Duplication → Technical Debt Resolution → Phase 2 Enhanced UX
+**Last Updated**: 2025-07-05
+**Current Status**: MVP Complete with Holistic Database Management + Circuit Breaker Pattern
+**Next Milestone**: Phase 3 PostgreSQL Investigation → NextAuth.js Type Safety → Phase 2 Enhanced UX

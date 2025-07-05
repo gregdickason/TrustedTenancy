@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
+import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
+import type { Session } from 'next-auth'
 
 export async function GET(
   request: NextRequest,
@@ -55,7 +56,7 @@ export async function PUT(
 ) {
   const { id } = await params
   try {
-    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
+    const session = await getServerSession(authOptions) as Session | null
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -108,7 +109,7 @@ export async function DELETE(
 ) {
   const { id } = await params
   try {
-    const session = await getServerSession(authOptions) as { user?: { id?: string } } | null
+    const session = await getServerSession(authOptions) as Session | null
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

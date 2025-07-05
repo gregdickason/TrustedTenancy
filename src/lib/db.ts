@@ -6,34 +6,41 @@ const globalForPrisma = globalThis as unknown as {
   prismaConnectionId: string | undefined
 }
 
-// Connection configuration optimized for development
+// Environment-specific connection configuration
 const createPrismaClient = () => {
+  const isDevelopment = process.env.NODE_ENV === 'development'
+  
   const client = new PrismaClient({
-    log: [
-      { emit: 'event', level: 'query' },
+    log: isDevelopment ? [
       { emit: 'event', level: 'error' },
       { emit: 'event', level: 'warn' },
+    ] : [
+      { emit: 'event', level: 'error' },
     ],
     datasources: {
       db: {
         url: process.env.DATABASE_URL,
       },
     },
+    // Environment-specific optimizations
+    ...(isDevelopment ? {
+      // Development: prioritize stability over performance
+    } : {
+      // Production: optimize for performance
+      __internal: {
+        engine: {
+          enableEngineDebugMode: false,
+        },
+      },
+    }),
   })
 
   // Add connection ID for tracking
   const connectionId = Math.random().toString(36).substring(7)
   ;(client as any).__connectionId = connectionId
   
-  // Enhanced logging for development
-  if (process.env.NODE_ENV === 'development') {
-    client.$on('query', (e) => {
-      console.log(`🔍 Query [${connectionId}]: ${e.query}`)
-      if (e.duration > 1000) {
-        console.warn(`⚠️  Slow query detected: ${e.duration}ms`)
-      }
-    })
-    
+  // Environment-specific logging
+  if (isDevelopment) {
     client.$on('error', (e) => {
       console.error(`❌ Database error [${connectionId}]:`, e)
     })
@@ -41,22 +48,24 @@ const createPrismaClient = () => {
     client.$on('warn', (e) => {
       console.warn(`⚠️  Database warning [${connectionId}]:`, e)
     })
+    
+    console.log(`🔗 Database client created [${connectionId}] for ${isDevelopment ? 'development' : 'production'}`)
   }
   
   return client
 }
 
-// Enhanced singleton pattern for Turbopack compatibility
+// Stable singleton pattern for development
 function getOrCreatePrismaClient(): PrismaClient {
   // In production, always create a new client
   if (process.env.NODE_ENV === 'production') {
     return createPrismaClient()
   }
 
-  // In development, check if we need a new client
-  const currentConnectionId = process.env.DATABASE_URL + Date.now().toString().slice(-6)
+  // In development, use stable singleton
+  const stableConnectionId = process.env.DATABASE_URL || 'default'
   
-  if (!globalForPrisma.prisma || globalForPrisma.prismaConnectionId !== currentConnectionId) {
+  if (!globalForPrisma.prisma || globalForPrisma.prismaConnectionId !== stableConnectionId) {
     // Clean up old client if it exists
     if (globalForPrisma.prisma) {
       globalForPrisma.prisma.$disconnect().catch(console.error)
@@ -64,17 +73,19 @@ function getOrCreatePrismaClient(): PrismaClient {
     
     // Create new client
     globalForPrisma.prisma = createPrismaClient()
-    globalForPrisma.prismaConnectionId = currentConnectionId
+    globalForPrisma.prismaConnectionId = stableConnectionId
+    
+    console.log(`🔗 Database client created with connection ID: ${(globalForPrisma.prisma as any).__connectionId}`)
   }
   
   return globalForPrisma.prisma
 }
 
-// Connection retry wrapper with exponential backoff
+// Simplified connection retry logic
 async function withRetry<T>(
   operation: () => Promise<T>,
-  maxRetries: number = 3,
-  baseDelay: number = 1000
+  maxRetries: number = 2,
+  baseDelay: number = 500
 ): Promise<T> {
   let lastError: Error
   
@@ -86,33 +97,23 @@ async function withRetry<T>(
       
       // Don't retry certain types of errors
       if (error instanceof Error) {
-        if (error.message.includes('prepared statement') && error.message.includes('already exists')) {
-          // For prepared statement conflicts, wait and retry with a new client
-          console.warn(`🔄 Prepared statement conflict detected, creating new client (attempt ${attempt + 1}/${maxRetries})`)
-          
-          // Force new client creation
-          if (globalForPrisma.prisma) {
-            await globalForPrisma.prisma.$disconnect().catch(() => {})
-            globalForPrisma.prisma = undefined
-            globalForPrisma.prismaConnectionId = undefined
-          }
-          
-          // Wait with exponential backoff
-          const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000
-          await new Promise(resolve => setTimeout(resolve, delay))
-          continue
-        }
-        
-        // Don't retry schema/syntax errors
+        // Don't retry schema/syntax errors or auth errors
         if (error.message.includes('does not exist') || 
             error.message.includes('syntax error') ||
-            error.message.includes('permission denied')) {
+            error.message.includes('permission denied') ||
+            error.message.includes('unauthorized')) {
           throw error
         }
       }
       
-      // Wait before retry
-      const delay = baseDelay * Math.pow(2, attempt)
+      // Only retry on the last attempt if it's a connection issue
+      if (attempt === maxRetries - 1) {
+        console.warn(`🔄 Database operation failed after ${maxRetries} attempts: ${error.message}`)
+        throw lastError
+      }
+      
+      // Wait before retry with jitter
+      const delay = baseDelay * Math.pow(1.5, attempt) + Math.random() * 200
       await new Promise(resolve => setTimeout(resolve, delay))
     }
   }
@@ -120,8 +121,54 @@ async function withRetry<T>(
   throw lastError!
 }
 
-// Enhanced database client with retry logic
+// Circuit breaker for database operations
+class CircuitBreaker {
+  private failures = 0
+  private lastFailureTime = 0
+  private readonly threshold = 5
+  private readonly timeout = 30000 // 30 seconds
+
+  async execute<T>(operation: () => Promise<T>): Promise<T> {
+    if (this.isOpen()) {
+      throw new Error('Circuit breaker is OPEN - database unavailable')
+    }
+
+    try {
+      const result = await operation()
+      this.onSuccess()
+      return result
+    } catch (error) {
+      this.onFailure()
+      throw error
+    }
+  }
+
+  private isOpen(): boolean {
+    return this.failures >= this.threshold &&
+           (Date.now() - this.lastFailureTime) < this.timeout
+  }
+
+  private onSuccess(): void {
+    this.failures = 0
+  }
+
+  private onFailure(): void {
+    this.failures++
+    this.lastFailureTime = Date.now()
+  }
+
+  getState(): { isOpen: boolean; failures: number } {
+    return {
+      isOpen: this.isOpen(),
+      failures: this.failures
+    }
+  }
+}
+
+// Enhanced database client with retry logic and circuit breaker
 class DatabaseClient {
+  private circuitBreaker = new CircuitBreaker()
+
   private get client() {
     return getOrCreatePrismaClient()
   }
@@ -132,10 +179,12 @@ class DatabaseClient {
     return {
       findMany: (args?: any) => withRetry(() => client.property.findMany(args)),
       findUnique: (args: any) => withRetry(() => client.property.findUnique(args)),
+      findFirst: (args?: any) => withRetry(() => client.property.findFirst(args)),
       create: (args: any) => withRetry(() => client.property.create(args)),
       update: (args: any) => withRetry(() => client.property.update(args)),
       delete: (args: any) => withRetry(() => client.property.delete(args)),
       count: (args?: any) => withRetry(() => client.property.count(args)),
+      upsert: (args: any) => withRetry(() => client.property.upsert(args)),
     }
   }
 
@@ -144,9 +193,11 @@ class DatabaseClient {
     return {
       findMany: (args?: any) => withRetry(() => client.user.findMany(args)),
       findUnique: (args: any) => withRetry(() => client.user.findUnique(args)),
+      findFirst: (args?: any) => withRetry(() => client.user.findFirst(args)),
       create: (args: any) => withRetry(() => client.user.create(args)),
       update: (args: any) => withRetry(() => client.user.update(args)),
       delete: (args: any) => withRetry(() => client.user.delete(args)),
+      count: (args?: any) => withRetry(() => client.user.count(args)),
       upsert: (args: any) => withRetry(() => client.user.upsert(args)),
     }
   }
@@ -156,9 +207,12 @@ class DatabaseClient {
     return {
       findMany: (args?: any) => withRetry(() => client.inquiry.findMany(args)),
       findUnique: (args: any) => withRetry(() => client.inquiry.findUnique(args)),
+      findFirst: (args?: any) => withRetry(() => client.inquiry.findFirst(args)),
       create: (args: any) => withRetry(() => client.inquiry.create(args)),
       update: (args: any) => withRetry(() => client.inquiry.update(args)),
       delete: (args: any) => withRetry(() => client.inquiry.delete(args)),
+      count: (args?: any) => withRetry(() => client.inquiry.count(args)),
+      upsert: (args: any) => withRetry(() => client.inquiry.upsert(args)),
     }
   }
 
@@ -167,14 +221,36 @@ class DatabaseClient {
     return this.client
   }
 
-  // Health check method
+  // Health check method with circuit breaker
   async healthCheck(): Promise<boolean> {
     try {
-      await withRetry(() => this.client.$queryRaw`SELECT 1`)
+      await this.circuitBreaker.execute(async () => {
+        // Use a simple count query instead of raw SQL to avoid prepared statement issues
+        await withRetry(() => this.client.user.count({ take: 1 }))
+      })
       return true
     } catch (error) {
-      console.error('Database health check failed:', error)
+      const circuitState = this.circuitBreaker.getState()
+      if (circuitState.isOpen) {
+        console.warn(`🔴 Circuit breaker OPEN - ${circuitState.failures} failures`)
+      } else {
+        console.error('Database health check failed:', error)
+      }
       return false
+    }
+  }
+
+  // Get database status including circuit breaker state
+  async getStatus(): Promise<{
+    healthy: boolean
+    circuitBreaker: { isOpen: boolean; failures: number }
+    connectionId: string
+  }> {
+    const healthy = await this.healthCheck()
+    return {
+      healthy,
+      circuitBreaker: this.circuitBreaker.getState(),
+      connectionId: (this.client as any).__connectionId || 'unknown'
     }
   }
 
@@ -189,3 +265,20 @@ class DatabaseClient {
 }
 
 export const db = new DatabaseClient()
+
+// Graceful cleanup on process exit
+if (process.env.NODE_ENV !== 'production') {
+  process.on('beforeExit', async () => {
+    await db.disconnect()
+  })
+  
+  process.on('SIGINT', async () => {
+    await db.disconnect()
+    process.exit(0)
+  })
+  
+  process.on('SIGTERM', async () => {
+    await db.disconnect()
+    process.exit(0)
+  })
+}

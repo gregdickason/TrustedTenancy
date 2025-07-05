@@ -3,21 +3,21 @@ import { db } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   try {
-    // Check database health
-    const isHealthy = await db.healthCheck()
+    // Get comprehensive database status
+    const dbStatus = await db.getStatus()
     
-    // Get basic database stats
+    // Get basic database stats if healthy
     let stats = null
-    if (isHealthy) {
+    if (dbStatus.healthy) {
       try {
         const [userCount, propertyCount] = await Promise.all([
-          db.user.count(),
-          db.property.count()
+          db.$.user.count(),
+          db.$.property.count()
         ])
         stats = {
           users: userCount,
           properties: propertyCount,
-          connection_id: (db.$ as any).__connectionId || 'unknown'
+          connection_id: dbStatus.connectionId
         }
       } catch (error) {
         console.error('Error getting database stats:', error)
@@ -25,17 +25,18 @@ export async function GET(request: NextRequest) {
     }
     
     const response = {
-      status: isHealthy ? 'healthy' : 'unhealthy',
+      status: dbStatus.healthy ? 'healthy' : 'unhealthy',
       timestamp: new Date().toISOString(),
       database: {
-        connected: isHealthy,
+        connected: dbStatus.healthy,
+        circuit_breaker: dbStatus.circuitBreaker,
         stats
       },
       environment: process.env.NODE_ENV,
     }
     
     return NextResponse.json(response, { 
-      status: isHealthy ? 200 : 503,
+      status: dbStatus.healthy ? 200 : 503,
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
         'Pragma': 'no-cache',
