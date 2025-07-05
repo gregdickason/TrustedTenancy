@@ -19,6 +19,7 @@ const createPropertySchema = z.object({
   propertyType: z.enum(['HOUSE', 'APARTMENT', 'TOWNHOUSE', 'STUDIO', 'ROOM', 'OTHER']),
   rentAmount: z.number().min(0, 'Rent amount must be greater than 0'),
   features: z.array(z.string()).optional(),
+  images: z.array(z.string()).optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -32,12 +33,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = createPropertySchema.parse(body)
 
+    const { images: imageUrls, ...propertyData } = validatedData
+
     const property = await db.property.create({
       data: {
-        ...validatedData,
+        ...propertyData,
         landlordId: session.user.id,
         rentAmount: validatedData.rentAmount * 100, // Convert to cents
         features: validatedData.features || [],
+        images: imageUrls ? {
+          create: imageUrls.map((url, index) => ({
+            url,
+            altText: `Property image ${index + 1}`,
+            isPrimary: index === 0, // First image is primary
+          }))
+        } : undefined,
       },
       include: {
         images: true,

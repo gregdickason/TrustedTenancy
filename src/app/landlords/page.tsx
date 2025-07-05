@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Header from '@/components/Header'
+import ImageUpload from '@/components/ImageUpload'
 
 export default function LandlordPage() {
   const [formData, setFormData] = useState({
@@ -18,6 +19,8 @@ export default function LandlordPage() {
     rentAmount: '',
     features: [] as string[],
   })
+
+  const [images, setImages] = useState<string[]>([])
 
   const australianStates = [
     'NSW', 'VIC', 'QLD', 'WA', 'SA', 'TAS', 'ACT', 'NT'
@@ -44,6 +47,7 @@ export default function LandlordPage() {
         body: JSON.stringify({
           ...formData,
           rentAmount: parseInt(formData.rentAmount),
+          images,
         }),
       })
       
@@ -72,6 +76,14 @@ export default function LandlordPage() {
         ? prev.features.filter(f => f !== feature)
         : [...prev.features, feature]
     }))
+  }
+
+  const handleImageUpload = (imageUrl: string) => {
+    setImages(prev => [...prev, imageUrl])
+  }
+
+  const handleImageRemove = (imageUrl: string) => {
+    setImages(prev => prev.filter(url => url !== imageUrl))
   }
 
   return (
@@ -273,12 +285,18 @@ export default function LandlordPage() {
               </div>
             </div>
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
-              <h3 className="font-medium text-yellow-800 mb-2">
-                📸 Photo Upload Coming Soon
-              </h3>
-              <p className="text-sm text-yellow-700">
-                Property photo upload will be available in the next version. For now, you can create your listing and add photos later.
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Property Images
+              </label>
+              <ImageUpload
+                onUpload={handleImageUpload}
+                onRemove={handleImageRemove}
+                existingImages={images}
+                maxImages={8}
+              />
+              <p className="text-sm text-gray-500 mt-2">
+                Upload up to 8 high-quality images of your property. The first image will be used as the main photo.
               </p>
             </div>
 
