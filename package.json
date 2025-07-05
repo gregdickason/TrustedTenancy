@@ -12,10 +12,16 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:with-db": "node scripts/simple-dev.js",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:seed": "npx tsx prisma/seed.ts"
+    "db:seed": "npx tsx prisma/seed.ts",
+    "db:start": "node scripts/start-db.js",
+    "db:stop": "npx prisma dev stop default",
+    "db:status": "npx prisma dev ls",
+    "db:reset": "node scripts/reset-db.js",
+    "db:health": "curl -s http://localhost:3000/api/health | jq ."
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

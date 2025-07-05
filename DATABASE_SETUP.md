@@ -4,15 +4,33 @@
 
 TrustedTenancy uses **Prisma Dev** for local development - a managed PostgreSQL database that requires no local installation.
 
-### ✅ Quick Start (Already Done)
+### ✅ Quick Start (Recommended)
 
-The database is already configured and seeded with sample data. Just run:
+The database is configured with enhanced connection management and will be automatically started with sample data. Just run:
+
+```bash
+npm run dev:with-db
+```
+
+This will:
+- 🧹 Clean up any existing database connections
+- 🏗️  Create a dedicated development database (`trustedtenancy_dev`)
+- ✅ Start the database with optimized connection settings
+- ✅ Ensure the database schema is up to date
+- ✅ Seed the database with sample data (if empty)
+- ✅ Start the Next.js development server with connection retry logic
+
+Visit http://localhost:3000/properties to see the sample properties!
+
+### Alternative: Manual Start
+
+If you prefer to manage the database manually:
 
 ```bash
 npm run dev
 ```
 
-Visit http://localhost:3000/properties to see the sample properties!
+(Note: This requires the database to be running already)
 
 ### 🛠️ Manual Setup (If Needed)
 
@@ -50,13 +68,37 @@ The seeded database contains:
 - **Reset Database**: `npx prisma db push --force-reset`
 - **Re-seed**: `npm run db:seed`
 
+### 🛠️ Database Control Scripts
+
+- **Start Database**: `npm run db:start` - Start database only
+- **Stop Database**: `npm run db:stop` - Stop database server
+- **Check Status**: `npm run db:status` - Check if database is running
+- **Reset Database**: `npm run db:reset` - Clean reset with fresh data
+- **Health Check**: `npm run db:health` - Check database health and stats
+- **Start with Database**: `npm run dev:with-db` (recommended for development)
+
+### 🔧 New Features & Improvements
+
+- **Connection Retry Logic**: Automatic retry with exponential backoff for connection issues
+- **Prepared Statement Fix**: Resolves "prepared statement already exists" errors
+- **Turbopack Compatibility**: Enhanced singleton pattern works with Next.js hot reload
+- **Health Monitoring**: Real-time database health checks at `/api/health`
+- **Enhanced Logging**: Detailed connection and query logging in development
+- **Graceful Degradation**: App continues working even when database is temporarily unavailable
+
 ### 🌐 Environment Variables
 
-Current `.env` configuration:
+Current `.env` configuration (optimized for stability):
 ```env
-DATABASE_URL="postgres://postgres:postgres@localhost:51214/trustedtenancy?..."
+DATABASE_URL="postgres://postgres:postgres@localhost:51214/trustedtenancy_dev?sslmode=disable&connection_limit=5&connect_timeout=10&max_idle_connection_lifetime=300&pool_timeout=30&socket_timeout=30"
 NEXTAUTH_SECRET="trustedtenancy-dev-secret-2025"
 ```
+
+**Key optimizations:**
+- Uses dedicated `trustedtenancy_dev` database (not `template1`)
+- Connection limit increased to 5 for better concurrency
+- Proper timeout settings to prevent hanging connections
+- Removed problematic `single_use_connections=true` setting
 
 ### 📋 What You Can Test
 

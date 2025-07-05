@@ -9,28 +9,73 @@ export default async function Properties() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let properties: any[] = []
   let dbError: string | null = null
+  let isHealthy = false
 
+  // First check database health
   try {
-    properties = await db.property.findMany({
-      where: {
-        status: 'ACTIVE'
-      },
-      include: {
-        images: true,
-        landlord: {
-          select: {
-            name: true,
-            email: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    })
+    isHealthy = await db.healthCheck()
   } catch (error) {
-    console.error('Database connection error:', error)
-    dbError = 'Unable to connect to database. Please ensure the database is running and configured properly.'
+    console.error('Database health check failed:', error)
+  }
+
+  if (isHealthy) {
+    try {
+      properties = await db.property.findMany({
+        where: {
+          status: 'ACTIVE'
+        },
+        include: {
+          images: true,
+          landlord: {
+            select: {
+              name: true,
+              email: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      })
+    } catch (error) {
+      console.error('Database query error:', error)
+      
+      // Provide specific error messages based on error type
+      if (error instanceof Error) {
+        if (error.message.includes('prepared statement')) {
+          dbError = 'Database connection conflict detected. Please refresh the page or restart the development server.'
+        } else if (error.message.includes('connect')) {
+          dbError = 'Unable to connect to database. Please ensure the database is running.'
+        } else {
+          dbError = 'Database query failed. Please try again in a moment.'
+        }
+      } else {
+        dbError = 'An unexpected database error occurred.'
+      }
+    }
+  } else {
+    // Database is not healthy, provide fallback
+    dbError = 'Database is not available. Please start the database service.'
+    
+    // Provide sample properties for demonstration when database is down
+    properties = [
+      {
+        id: 'sample-1',
+        title: 'Sample Property - Database Offline',
+        address: '123 Demo Street',
+        suburb: 'Demo Suburb',
+        state: 'NSW',
+        postcode: '2000',
+        bedrooms: 2,
+        bathrooms: 1,
+        parking: 1,
+        propertyType: 'APARTMENT',
+        rentAmount: 250000,
+        images: [],
+        landlord: { name: 'Demo Landlord', email: 'demo@example.com' },
+        createdAt: new Date()
+      }
+    ]
   }
 
   return (
