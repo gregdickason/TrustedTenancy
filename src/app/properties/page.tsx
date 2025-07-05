@@ -5,9 +5,25 @@ import Header from '@/components/Header'
 
 export const dynamic = 'force-dynamic'
 
+type PropertyItem = {
+  id: string
+  title: string
+  address: string
+  suburb: string
+  state: string
+  postcode: string
+  bedrooms: number
+  bathrooms: number
+  parking?: number | null
+  propertyType: string
+  rentAmount: number
+  images: Array<{ url: string; altText?: string | null }>
+  landlord: { name: string | null; email: string }
+  createdAt: Date
+}
+
 export default async function Properties() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let properties: any[] = []
+  let properties: PropertyItem[] = []
   let dbError: string | null = null
   let isHealthy = false
 
@@ -20,7 +36,7 @@ export default async function Properties() {
 
   if (isHealthy) {
     try {
-      properties = await db.property.findMany({
+      properties = await db.$.property.findMany({
         where: {
           status: 'ACTIVE'
         },

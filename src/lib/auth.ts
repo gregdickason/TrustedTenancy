@@ -1,7 +1,7 @@
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import GoogleProvider from 'next-auth/providers/google'
 import { db } from './db'
-import type { NextAuthOptions } from 'next-auth'
+import type { NextAuthOptions, User } from 'next-auth'
 import type { Session } from 'next-auth'
 import type { JWT } from 'next-auth/jwt'
 
@@ -21,10 +21,10 @@ export const authOptions: NextAuthOptions = {
       }
       return session
     },
-    jwt: async ({ user, token }: { user?: any; token: JWT }) => {
+    jwt: async ({ user, token }: { user?: User; token: JWT }) => {
       if (user) {
         token.uid = user.id
-        token.role = user.role
+        token.role = user.role || null
       }
       return token
     },

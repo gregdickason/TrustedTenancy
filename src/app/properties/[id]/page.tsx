@@ -12,18 +12,19 @@ interface PropertyPageProps {
 
 export default async function PropertyPage({ params }: PropertyPageProps) {
   const { id } = await params
-  const property = await db.property.findUnique({
+  const property = await db.$.property.findUnique({
     where: { id },
     include: {
       images: true,
       landlord: {
         select: {
+          id: true,
           name: true,
           email: true,
         },
       },
     },
-  }) as any // TODO: Fix this with proper Prisma types
+  })
 
   if (!property) {
     notFound()
@@ -127,7 +128,7 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
                     Features
                   </h2>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {property.features.map((feature: string) => (
+                    {property.features.map((feature) => (
                       <div
                         key={feature}
                         className="flex items-center gap-2 text-gray-600"

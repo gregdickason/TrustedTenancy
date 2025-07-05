@@ -1,4 +1,9 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
+
+// Extended PrismaClient with connection ID
+interface ExtendedPrismaClient extends PrismaClient {
+  __connectionId?: string
+}
 
 // Enhanced global type for Prisma client management
 const globalForPrisma = globalThis as unknown as {
@@ -27,17 +32,12 @@ const createPrismaClient = () => {
       // Development: prioritize stability over performance
     } : {
       // Production: optimize for performance
-      __internal: {
-        engine: {
-          enableEngineDebugMode: false,
-        },
-      },
     }),
   })
 
   // Add connection ID for tracking
   const connectionId = Math.random().toString(36).substring(7)
-  ;(client as any).__connectionId = connectionId
+  ;(client as ExtendedPrismaClient).__connectionId = connectionId
   
   // Environment-specific logging
   if (isDevelopment) {
@@ -75,7 +75,7 @@ function getOrCreatePrismaClient(): PrismaClient {
     globalForPrisma.prisma = createPrismaClient()
     globalForPrisma.prismaConnectionId = stableConnectionId
     
-    console.log(`🔗 Database client created with connection ID: ${(globalForPrisma.prisma as any).__connectionId}`)
+    console.log(`🔗 Database client created with connection ID: ${(globalForPrisma.prisma as ExtendedPrismaClient).__connectionId}`)
   }
   
   return globalForPrisma.prisma
@@ -108,7 +108,7 @@ async function withRetry<T>(
       
       // Only retry on the last attempt if it's a connection issue
       if (attempt === maxRetries - 1) {
-        console.warn(`🔄 Database operation failed after ${maxRetries} attempts: ${error.message}`)
+        console.warn(`🔄 Database operation failed after ${maxRetries} attempts: ${lastError.message}`)
         throw lastError
       }
       
@@ -177,42 +177,42 @@ class DatabaseClient {
   get property() {
     const client = this.client
     return {
-      findMany: (args?: any) => withRetry(() => client.property.findMany(args)),
-      findUnique: (args: any) => withRetry(() => client.property.findUnique(args)),
-      findFirst: (args?: any) => withRetry(() => client.property.findFirst(args)),
-      create: (args: any) => withRetry(() => client.property.create(args)),
-      update: (args: any) => withRetry(() => client.property.update(args)),
-      delete: (args: any) => withRetry(() => client.property.delete(args)),
-      count: (args?: any) => withRetry(() => client.property.count(args)),
-      upsert: (args: any) => withRetry(() => client.property.upsert(args)),
+      findMany: (args?: Prisma.PropertyFindManyArgs) => withRetry(() => client.property.findMany(args)),
+      findUnique: (args: Prisma.PropertyFindUniqueArgs) => withRetry(() => client.property.findUnique(args)),
+      findFirst: (args?: Prisma.PropertyFindFirstArgs) => withRetry(() => client.property.findFirst(args)),
+      create: (args: Prisma.PropertyCreateArgs) => withRetry(() => client.property.create(args)),
+      update: (args: Prisma.PropertyUpdateArgs) => withRetry(() => client.property.update(args)),
+      delete: (args: Prisma.PropertyDeleteArgs) => withRetry(() => client.property.delete(args)),
+      count: (args?: Prisma.PropertyCountArgs) => withRetry(() => client.property.count(args)),
+      upsert: (args: Prisma.PropertyUpsertArgs) => withRetry(() => client.property.upsert(args)),
     }
   }
 
   get user() {
     const client = this.client
     return {
-      findMany: (args?: any) => withRetry(() => client.user.findMany(args)),
-      findUnique: (args: any) => withRetry(() => client.user.findUnique(args)),
-      findFirst: (args?: any) => withRetry(() => client.user.findFirst(args)),
-      create: (args: any) => withRetry(() => client.user.create(args)),
-      update: (args: any) => withRetry(() => client.user.update(args)),
-      delete: (args: any) => withRetry(() => client.user.delete(args)),
-      count: (args?: any) => withRetry(() => client.user.count(args)),
-      upsert: (args: any) => withRetry(() => client.user.upsert(args)),
+      findMany: (args?: Prisma.UserFindManyArgs) => withRetry(() => client.user.findMany(args)),
+      findUnique: (args: Prisma.UserFindUniqueArgs) => withRetry(() => client.user.findUnique(args)),
+      findFirst: (args?: Prisma.UserFindFirstArgs) => withRetry(() => client.user.findFirst(args)),
+      create: (args: Prisma.UserCreateArgs) => withRetry(() => client.user.create(args)),
+      update: (args: Prisma.UserUpdateArgs) => withRetry(() => client.user.update(args)),
+      delete: (args: Prisma.UserDeleteArgs) => withRetry(() => client.user.delete(args)),
+      count: (args?: Prisma.UserCountArgs) => withRetry(() => client.user.count(args)),
+      upsert: (args: Prisma.UserUpsertArgs) => withRetry(() => client.user.upsert(args)),
     }
   }
 
   get inquiry() {
     const client = this.client
     return {
-      findMany: (args?: any) => withRetry(() => client.inquiry.findMany(args)),
-      findUnique: (args: any) => withRetry(() => client.inquiry.findUnique(args)),
-      findFirst: (args?: any) => withRetry(() => client.inquiry.findFirst(args)),
-      create: (args: any) => withRetry(() => client.inquiry.create(args)),
-      update: (args: any) => withRetry(() => client.inquiry.update(args)),
-      delete: (args: any) => withRetry(() => client.inquiry.delete(args)),
-      count: (args?: any) => withRetry(() => client.inquiry.count(args)),
-      upsert: (args: any) => withRetry(() => client.inquiry.upsert(args)),
+      findMany: (args?: Prisma.InquiryFindManyArgs) => withRetry(() => client.inquiry.findMany(args)),
+      findUnique: (args: Prisma.InquiryFindUniqueArgs) => withRetry(() => client.inquiry.findUnique(args)),
+      findFirst: (args?: Prisma.InquiryFindFirstArgs) => withRetry(() => client.inquiry.findFirst(args)),
+      create: (args: Prisma.InquiryCreateArgs) => withRetry(() => client.inquiry.create(args)),
+      update: (args: Prisma.InquiryUpdateArgs) => withRetry(() => client.inquiry.update(args)),
+      delete: (args: Prisma.InquiryDeleteArgs) => withRetry(() => client.inquiry.delete(args)),
+      count: (args?: Prisma.InquiryCountArgs) => withRetry(() => client.inquiry.count(args)),
+      upsert: (args: Prisma.InquiryUpsertArgs) => withRetry(() => client.inquiry.upsert(args)),
     }
   }
 
@@ -250,7 +250,7 @@ class DatabaseClient {
     return {
       healthy,
       circuitBreaker: this.circuitBreaker.getState(),
-      connectionId: (this.client as any).__connectionId || 'unknown'
+      connectionId: (this.client as ExtendedPrismaClient).__connectionId || 'unknown'
     }
   }
 

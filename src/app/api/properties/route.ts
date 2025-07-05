@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 import type { Session } from 'next-auth'
+import type { Prisma, PropertyType } from '@prisma/client'
 
 const createPropertySchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -81,8 +82,7 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const where: any = {
+    const where: Prisma.PropertyWhereInput = {
       status: 'ACTIVE',
     }
 
@@ -95,16 +95,18 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    if (propertyType) {
-      where.propertyType = propertyType
+    if (propertyType && ['HOUSE', 'APARTMENT', 'TOWNHOUSE', 'STUDIO', 'ROOM', 'OTHER'].includes(propertyType)) {
+      where.propertyType = propertyType as PropertyType
     }
 
-    if (minRent) {
-      where.rentAmount = { ...where.rentAmount, gte: parseInt(minRent) * 100 }
-    }
-
-    if (maxRent) {
-      where.rentAmount = { ...where.rentAmount, lte: parseInt(maxRent) * 100 }
+    if (minRent || maxRent) {
+      where.rentAmount = {}
+      if (minRent) {
+        where.rentAmount.gte = parseInt(minRent) * 100
+      }
+      if (maxRent) {
+        where.rentAmount.lte = parseInt(maxRent) * 100
+      }
     }
 
     if (bedrooms) {
