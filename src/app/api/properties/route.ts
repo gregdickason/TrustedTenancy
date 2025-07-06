@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import { getTypedServerSession } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
-import type { Session } from 'next-auth'
 import type { Prisma, PropertyType } from '@prisma/client'
 
 const createPropertySchema = z.object({
@@ -24,7 +22,7 @@ const createPropertySchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions) as Session | null
+    const session = await getTypedServerSession()
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

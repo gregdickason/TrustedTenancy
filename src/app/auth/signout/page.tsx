@@ -123,7 +123,7 @@ export default function SignOutPage() {
 
             <div className="mt-6 border-t border-gray-200 pt-6">
               <p className="text-sm text-gray-600 text-center">
-                You'll need to sign in again to access your account and manage properties.
+                You&apos;ll need to sign in again to access your account and manage properties.
               </p>
             </div>
           </div>

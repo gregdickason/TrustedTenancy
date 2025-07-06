@@ -1,13 +1,13 @@
 'use client'
 
 import { signIn, getSession } from 'next-auth/react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import Header from '@/components/Header'
 
-export default function SignUpPage() {
+function SignUpContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [isConfigured, setIsConfigured] = useState(true)
@@ -301,5 +301,13 @@ export default function SignUpPage() {
         </div>
       </main>
     </>
+  )
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignUpContent />
+    </Suspense>
   )
 }

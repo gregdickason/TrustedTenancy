@@ -1,5 +1,6 @@
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import GoogleProvider from 'next-auth/providers/google'
+import { getServerSession } from 'next-auth/next'
 import { db } from './db'
 import { logger } from './logger'
 import type { NextAuthOptions, User } from 'next-auth'
@@ -73,7 +74,7 @@ export const authOptions: NextAuthOptions = {
         return token
       }
     },
-    signIn: async ({ user, account, profile }) => {
+    signIn: async ({ user, account }) => {
       try {
         logger.auth('INFO', 'Sign-in attempt started', { 
           userId: user?.id,
@@ -85,13 +86,13 @@ export const authOptions: NextAuthOptions = {
         // Allow the sign-in to proceed
         return true
       } catch (error) {
-        logger.auth('ERROR', 'Sign-in callback failed', { user, account, profile }, error as Error)
+        logger.auth('ERROR', 'Sign-in callback failed', { user, account }, error as Error)
         return false
       }
     },
   },
   events: {
-    signIn: async ({ user, account, profile, isNewUser }) => {
+    signIn: async ({ user, account, isNewUser }) => {
       logger.auth('INFO', 'User signed in successfully', {
         userId: user?.id,
         userEmail: user?.email,
@@ -114,13 +115,13 @@ export const authOptions: NextAuthOptions = {
   },
   logger: {
     error: (code, metadata) => {
-      logger.auth('ERROR', `NextAuth error: ${code}`, metadata)
+      logger.auth('ERROR', `NextAuth error: ${code}`, metadata as Record<string, unknown>)
     },
     warn: (code) => {
       logger.auth('WARN', `NextAuth warning: ${code}`)
     },
     debug: (code, metadata) => {
-      logger.auth('DEBUG', `NextAuth debug: ${code}`, metadata)
+      logger.auth('DEBUG', `NextAuth debug: ${code}`, metadata as Record<string, unknown>)
     },
   },
   session: {
@@ -130,4 +131,9 @@ export const authOptions: NextAuthOptions = {
     signIn: '/auth/signin',
     signOut: '/auth/signout',
   },
+}
+
+// Typed wrapper for getServerSession to eliminate type casting
+export async function getTypedServerSession(): Promise<Session | null> {
+  return await getServerSession(authOptions)
 }

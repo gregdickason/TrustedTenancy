@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       callbackUrl,
       timestamp,
       userAgent: request.headers.get('user-agent'),
-      ip: request.ip || request.headers.get('x-forwarded-for') || 'unknown'
+      ip: request.headers.get('x-forwarded-for') || 'unknown'
     })
     
     return NextResponse.json({ success: true })

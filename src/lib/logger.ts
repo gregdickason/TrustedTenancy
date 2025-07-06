@@ -25,7 +25,7 @@ interface LogEntry {
   timestamp: string
   level: keyof LogLevel
   message: string
-  data?: any
+  data?: string
   stack?: string
 }
 
@@ -49,17 +49,17 @@ class Logger {
     }
   }
 
-  private createLogEntry(level: keyof LogLevel, message: string, data?: any, error?: Error): LogEntry {
+  private createLogEntry(level: keyof LogLevel, message: string, data?: Record<string, unknown>, error?: Error): LogEntry {
     return {
       timestamp: new Date().toISOString(),
       level,
       message,
-      data: data ? (typeof data === 'object' ? JSON.stringify(data) : data) : undefined,
+      data: data ? JSON.stringify(data) : undefined,
       stack: error?.stack
     }
   }
 
-  error(message: string, data?: any, error?: Error) {
+  error(message: string, data?: Record<string, unknown>, error?: Error) {
     const entry = this.createLogEntry('ERROR', message, data, error)
     this.writeToFile(this.logFile, entry)
     
@@ -69,7 +69,7 @@ class Logger {
     }
   }
 
-  warn(message: string, data?: any) {
+  warn(message: string, data?: Record<string, unknown>) {
     const entry = this.createLogEntry('WARN', message, data)
     this.writeToFile(this.logFile, entry)
     
@@ -78,7 +78,7 @@ class Logger {
     }
   }
 
-  info(message: string, data?: any) {
+  info(message: string, data?: Record<string, unknown>) {
     const entry = this.createLogEntry('INFO', message, data)
     this.writeToFile(this.logFile, entry)
     
@@ -87,7 +87,7 @@ class Logger {
     }
   }
 
-  debug(message: string, data?: any) {
+  debug(message: string, data?: Record<string, unknown>) {
     const entry = this.createLogEntry('DEBUG', message, data)
     this.writeToFile(this.logFile, entry)
     
@@ -97,7 +97,7 @@ class Logger {
   }
 
   // Specific method for authentication logging
-  auth(level: keyof LogLevel, message: string, data?: any, error?: Error) {
+  auth(level: keyof LogLevel, message: string, data?: Record<string, unknown>, error?: Error) {
     const entry = this.createLogEntry(level, message, data, error)
     this.writeToFile(this.authLogFile, entry)
     this.writeToFile(this.logFile, entry)
