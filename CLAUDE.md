@@ -182,7 +182,8 @@ src/
 ### Essential Commands
 ```bash
 # Development
-npm run dev                 # Start development server
+npm run dev                 # Start development server with Turbopack
+npm run dev:with-db        # Start development server + database (recommended)
 npm run build              # Build for production
 npm run start              # Start production server
 
@@ -190,12 +191,13 @@ npm run start              # Start production server
 npx prisma generate        # Generate Prisma client
 npx prisma migrate dev     # Run database migrations
 npx prisma studio          # Open Prisma Studio
-npx prisma db seed         # Seed database (when implemented)
+npm run db:seed            # Seed database
+npm run db:health          # Check database health
+npm run db:status          # Check database status
+npm run db:reset           # Reset database with fresh data
 
-# Testing (when implemented)
-npm test                   # Run unit tests
-npm run test:e2e          # Run E2E tests
-npm run test:coverage     # Test coverage report
+# Testing
+npm run test:regression    # Run regression tests (requires server running)
 
 # Linting & Formatting
 npm run lint              # ESLint
@@ -322,8 +324,9 @@ SENDGRID_API_KEY="email-notifications"
 ### When starting a new session:
 1. Review this CLAUDE.md file first
 2. Check current todo status with TodoRead
-3. Run `npm run dev` to verify application state
-4. Review recent git commits for context
+3. Run `npm run dev:with-db` to start application
+4. Run `npm run test:regression` to verify no regressions
+5. Review recent git commits for context
 
 ### Development priorities:
 1. Complete Phase 2 features (image upload, auth UI)
@@ -332,12 +335,25 @@ SENDGRID_API_KEY="email-notifications"
 4. Optimize performance and user experience
 
 ### Code review checklist:
+- [ ] Run `npm run test:regression` (all tests must pass)
 - [ ] TypeScript strict typing
 - [ ] Responsive design implementation
 - [ ] Error handling and loading states
 - [ ] API input validation
 - [ ] Database query optimization
 - [ ] Security best practices
+
+### Regression Test Coverage:
+The regression test script (`npm run test:regression`) verifies:
+- ✅ Database health endpoint (with circuit breaker status)
+- ✅ Homepage loading
+- ✅ Properties page functionality
+- ✅ Properties API endpoint (data retrieval)
+- ✅ Landlords page functionality  
+- ✅ Individual property page functionality
+- ✅ Circuit breaker is closed (healthy state)
+
+**Note**: Database operations may take 10+ seconds due to expected prepared statement conflicts in development.
 
 ## License & Legal
 
@@ -438,9 +454,18 @@ Copyright (c) 2025 Greg Dickason
 4. ⚠️ **Health checks must be connection-only, never query-based**
 
 **DEVELOPMENT STRATEGY CONFIRMED**:
-- **Development**: Accept prepared statement conflicts, circuit breaker provides stability
+- **Development**: Use Turbopack, accept prepared statement conflicts AND manifest errors
 - **Production**: Use managed database providers (Neon, PlanetScale) that handle this automatically
 - **Health checks**: Connection validation only, no query execution
+- **Regression Recovery**: git reset --hard to last working commit, test first, then debug/fix
+- **Testing**: ALWAYS run `npm run test:regression` before committing any changes
+
+**REGRESSION #2 RECOVERY (2025-07-06)**: 
+- **Issue**: Attempted to fix cosmetic Turbopack manifest errors by switching to regular Next.js dev
+- **Result**: Broke database connection completely
+- **Recovery**: git reset --hard 035c5b6 (before changes), tested all functionality
+- **Outcome**: ✅ Database healthy, all routes working (200 status), Turbopack + database management restored
+- **Key Learning**: NEVER sacrifice functionality for cosmetic fixes
 
 ### ⚠️ Technical Compromises Made (Previous Session)
 1. **Type Safety**: Multiple `any` types added to resolve NextAuth compatibility
@@ -484,9 +509,13 @@ Copyright (c) 2025 Greg Dickason
 ### 🛡️ **CRITICAL RULES TO PREVENT FUTURE DATABASE REGRESSIONS**:
 1. ❌ **NEVER use ANY Prisma queries in health checks** (creates prepared statements)
 2. ❌ **NEVER assume `prepared_statements=false` prevents conflicts** (PostgreSQL server-level issue)
-3. ✅ **USE connection-only health checks** (check client existence only)
-4. ✅ **TRUST circuit breaker to handle conflicts gracefully**
-5. ✅ **ACCEPT prepared statement conflicts as normal in development**
+3. ❌ **NEVER change from Turbopack to regular Next.js dev** (database management designed for Turbopack)
+4. ❌ **NEVER "fix" cosmetic Turbopack errors at expense of functionality** (manifest errors are harmless)
+5. ✅ **USE connection-only health checks** (check client existence only)
+6. ✅ **TRUST circuit breaker to handle conflicts gracefully**
+7. ✅ **ACCEPT prepared statement conflicts as normal in development**
+8. ✅ **ACCEPT Turbopack build manifest errors as known limitations** (cosmetic only, don't break functionality to fix them)
+9. ✅ **WHEN IN DOUBT: git reset --hard to last known working commit and test before proceeding**
 
 ### 🏗️ Development vs Production Database Strategy
 

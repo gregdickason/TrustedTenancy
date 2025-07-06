@@ -21,7 +21,8 @@
     "db:stop": "npx prisma dev stop default",
     "db:status": "npx prisma dev ls",
     "db:reset": "node scripts/reset-db.js",
-    "db:health": "curl -s http://localhost:3000/api/health | jq ."
+    "db:health": "curl -s http://localhost:3000/api/health | jq .",
+    "test:regression": "node scripts/regression-test.js"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
