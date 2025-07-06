@@ -137,7 +137,8 @@ src/
 
 ### Phase 2: Enhanced UX (🚧 IN PROGRESS)
 **Timeline**: 4-6 weeks
-- [ ] Image upload and gallery management
+- [x] Image upload and gallery management
+- [x] Custom authentication UI (sign-in/sign-up pages)
 - [ ] Advanced property search and filters
 - [ ] User profile management
 - [ ] Email notification system
@@ -351,6 +352,7 @@ The regression test script (`npm run test:regression`) verifies:
 - ✅ Properties API endpoint (data retrieval)
 - ✅ Landlords page functionality  
 - ✅ Individual property page functionality
+- ✅ Authentication pages (sign-in/sign-up)
 - ✅ Circuit breaker is closed (healthy state)
 
 **Note**: Database operations may take 10+ seconds due to expected prepared statement conflicts in development.

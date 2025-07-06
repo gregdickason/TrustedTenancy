@@ -151,7 +151,20 @@ async function runRegressionTests(port = 3000) {
     if (propertyPassed) passedTests++;
   }
   
-  // Test 7: Circuit Breaker Status (from health endpoint)
+  // Test 7: Authentication Pages
+  totalTests++;
+  log('\n🔐 Testing authentication pages...', 'yellow');
+  const [signinResponse, signupResponse] = await Promise.all([
+    makeRequest(`${baseUrl}/auth/signin`),
+    makeRequest(`${baseUrl}/auth/signup`)
+  ]);
+  const authPagesPassed = signinResponse.success && signupResponse.success;
+  
+  logResult('Authentication Pages', authPagesPassed, 
+    authPagesPassed ? `SignIn: ${signinResponse.responseTime}s, SignUp: ${signupResponse.responseTime}s` : 'One or more auth pages failed');
+  if (authPagesPassed) passedTests++;
+
+  // Test 8: Circuit Breaker Status (from health endpoint)
   totalTests++;
   log('\n🔄 Testing circuit breaker status...', 'yellow');
   const circuitBreakerPassed = healthResponse.success && 
