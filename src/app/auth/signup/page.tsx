@@ -10,10 +10,31 @@ import Header from '@/components/Header'
 export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isConfigured, setIsConfigured] = useState(true)
   const router = useRouter()
   const searchParams = useSearchParams()
   
   const callbackUrl = searchParams.get('callbackUrl') || '/'
+
+  // Check if Google OAuth is configured
+  useEffect(() => {
+    const checkConfiguration = async () => {
+      try {
+        const response = await fetch('/api/auth/providers')
+        const providers = await response.json()
+        const hasGoogle = Object.keys(providers).includes('google')
+        setIsConfigured(hasGoogle)
+        
+        if (!hasGoogle) {
+          setError('Google OAuth is not configured. Please contact the administrator.')
+        }
+      } catch (error) {
+        console.error('Failed to check auth providers:', error)
+        setError('Unable to verify authentication configuration.')
+      }
+    }
+    checkConfiguration()
+  }, [])
 
   // Check if user is already signed in
   useEffect(() => {
@@ -31,18 +52,60 @@ export default function SignUpPage() {
       setIsLoading(true)
       setError('')
       
+      console.log('Starting Google sign-up process...', {
+        callbackUrl,
+        timestamp: new Date().toISOString()
+      })
+      
       const result = await signIn('google', {
         callbackUrl,
         redirect: false
       })
       
+      console.log('Google sign-up result:', {
+        result,
+        timestamp: new Date().toISOString()
+      })
+      
       if (result?.error) {
-        setError('Failed to create account with Google. Please try again.')
+        console.error('Google sign-up error:', result.error)
+        setError(`Failed to create account with Google: ${result.error}`)
+        
+        // Log to server as well
+        fetch('/api/log-client-error', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'AUTH_SIGNUP_ERROR',
+            error: result.error,
+            url: result.url,
+            callbackUrl,
+            timestamp: new Date().toISOString()
+          })
+        }).catch(console.error)
       } else if (result?.url) {
+        console.log('Redirecting to:', result.url)
         router.push(result.url)
+      } else {
+        console.warn('Unexpected result from signIn:', result)
+        setError('Sign-up completed but no redirect URL received.')
       }
     } catch (error) {
-      setError('An unexpected error occurred. Please try again.')
+      console.error('Unexpected error during Google sign-up:', error)
+      setError(`An unexpected error occurred: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      
+      // Log to server as well
+      fetch('/api/log-client-error', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'AUTH_SIGNUP_EXCEPTION',
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          callbackUrl,
+          timestamp: new Date().toISOString()
+        })
+      }).catch(console.error)
     } finally {
       setIsLoading(false)
     }
@@ -88,27 +151,51 @@ export default function SignUpPage() {
             )}
 
             <div className="space-y-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-blue-800">
-                      Quick & Secure Registration
-                    </h3>
-                    <div className="mt-1 text-sm text-blue-700">
-                      Sign up with Google to get started instantly. No password required!
+              {!isConfigured ? (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-yellow-800">
+                        Configuration Required
+                      </h3>
+                      <div className="mt-1 text-sm text-yellow-700">
+                        Google OAuth authentication is not configured. Please see{' '}
+                        <Link href="/setup-oauth" className="underline font-medium">
+                          setup instructions
+                        </Link>{' '}
+                        or contact the administrator.
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <svg className="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <div className="ml-3">
+                      <h3 className="text-sm font-medium text-blue-800">
+                        Quick & Secure Registration
+                      </h3>
+                      <div className="mt-1 text-sm text-blue-700">
+                        Sign up with Google to get started instantly. No password required!
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <button
                 onClick={handleGoogleSignUp}
-                disabled={isLoading}
+                disabled={isLoading || !isConfigured}
                 className="w-full flex justify-center items-center px-4 py-3 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isLoading ? (

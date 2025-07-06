@@ -22,7 +22,9 @@
     "db:status": "npx prisma dev ls",
     "db:reset": "node scripts/reset-db.js",
     "db:health": "curl -s http://localhost:3000/api/health | jq .",
-    "test:regression": "node scripts/regression-test.js"
+    "test:regression": "node scripts/regression-test.js",
+    "dev:clean": "lsof -ti:3000 | xargs kill -9 2>/dev/null || true && npm run dev:with-db",
+    "kill-port": "lsof -ti:3000 | xargs kill -9 2>/dev/null || echo 'Port 3000 is free'"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
