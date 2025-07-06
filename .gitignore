@@ -62,6 +62,9 @@ secrets/
 logs/
 *.log
 
+# uploads (development only - use blob storage in production)
+public/uploads/
+
 # runtime data
 pids/
 *.pid

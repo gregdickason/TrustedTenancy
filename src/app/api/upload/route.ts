@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { put } from '@vercel/blob'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { writeFile, mkdir } from 'fs/promises'
+import { join } from 'path'
 import type { Session } from 'next-auth'
 
 export async function POST(request: NextRequest) {
@@ -13,13 +15,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if we have the blob token
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      return NextResponse.json(
-        { error: 'Image upload not configured' }, 
-        { status: 500 }
-      )
-    }
+    // Check if we have the blob token, if not use local storage
+    const useLocalStorage = !process.env.BLOB_READ_WRITE_TOKEN
 
     // Parse the multipart form data
     const formData = await request.formData()
@@ -53,25 +50,62 @@ export async function POST(request: NextRequest) {
     const extension = file.name.split('.').pop()
     const filename = `property-images/${timestamp}-${randomString}.${extension}`
 
-    try {
-      // Upload to Vercel Blob
-      const blob = await put(filename, file, {
-        access: 'public',
-        token: process.env.BLOB_READ_WRITE_TOKEN,
-      })
+    if (useLocalStorage) {
+      // Development: Use local file storage
+      try {
+        // Create public/uploads directory if it doesn't exist
+        const uploadDir = join(process.cwd(), 'public', 'uploads')
+        await mkdir(uploadDir, { recursive: true })
 
-      return NextResponse.json({
-        url: blob.url,
-        filename: filename,
-        size: file.size,
-        type: file.type,
-      })
-    } catch (uploadError) {
-      console.error('Blob upload error:', uploadError)
-      return NextResponse.json(
-        { error: 'Failed to upload image' },
-        { status: 500 }
-      )
+        // Convert file to buffer
+        const bytes = await file.arrayBuffer()
+        const buffer = Buffer.from(bytes)
+
+        // Save file to public/uploads
+        const filePath = join(uploadDir, filename.split('/').pop()!) // Remove 'property-images/' prefix
+        await writeFile(filePath, buffer)
+
+        // Return local URL
+        const localUrl = `/uploads/${filename.split('/').pop()}`
+        
+        console.log(`Image uploaded locally: ${localUrl}`)
+        
+        return NextResponse.json({
+          url: localUrl,
+          filename: filename,
+          size: file.size,
+          type: file.type,
+          storage: 'local'
+        })
+      } catch (uploadError) {
+        console.error('Local upload error:', uploadError)
+        return NextResponse.json(
+          { error: 'Failed to upload image to local storage' },
+          { status: 500 }
+        )
+      }
+    } else {
+      // Production: Use Vercel Blob
+      try {
+        const blob = await put(filename, file, {
+          access: 'public',
+          token: process.env.BLOB_READ_WRITE_TOKEN,
+        })
+
+        return NextResponse.json({
+          url: blob.url,
+          filename: filename,
+          size: file.size,
+          type: file.type,
+          storage: 'vercel-blob'
+        })
+      } catch (uploadError) {
+        console.error('Blob upload error:', uploadError)
+        return NextResponse.json(
+          { error: 'Failed to upload image' },
+          { status: 500 }
+        )
+      }
     }
   } catch (error) {
     console.error('Upload API error:', error)
